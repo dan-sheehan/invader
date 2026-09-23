@@ -1,0 +1,22 @@
+{
+  "name": "invader",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "A workspace for building software with AI coding tools.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "postinstall": "node node_modules/electron/install.js && chmod +x node_modules/node-pty/prebuilds/*/spawn-helper && /usr/libexec/PlistBuddy -c 'Set :CFBundleName invader' -c 'Set :CFBundleDisplayName invader' node_modules/electron/dist/Electron.app/Contents/Info.plist"
+  },
+  "devDependencies": {
+    "electron": "44.4.4"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "marked": "18.0.14",
+    "node-pty": "^1.1.0"
+  }
+}
