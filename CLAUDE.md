@@ -1,3 +1,3 @@
 # invader
 
-Read and follow [HARNESS.md](HARNESS.md).
+@HARNESS.md

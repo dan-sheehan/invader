@@ -8,9 +8,9 @@ This folder is blank on purpose. Your own kit lives at `~/kit`, outside every re
 
 1. Make a folder named `kit` in your home folder.
 2. Drop things into it raw, like a note, a link or a few lines about yourself. There are no set folders or format: the agent takes care of the rest.
-3. Restart invader, so it shows your kit and its terminal knows where it is.
+3. Switch back to invader: it shows your kit once its window comes to the front. A terminal that was already open does not know where the kit is yet; type `exit` there and press a key for a new one that does.
 
-invader shows `~/kit` above the tree, whichever folder is open, and its files open like any other. The terminal sets `INVADER_KIT` to its path.
+invader shows `~/kit` under the tree, whichever folder is open, and its files open like any other. The terminal sets `INVADER_KIT` to its path.
 
 ## Let your agent use it
 

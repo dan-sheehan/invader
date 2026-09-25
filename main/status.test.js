@@ -28,7 +28,7 @@ test('a map where everything checks out counts boxes and arrows together', () =>
     dropped: [],
   });
   assert.deepEqual([res.state, res.checked, res.total], ['ok', 6, 6]);
-  assert.equal(res.detail, 'Boxes 3 of 3 and arrows 3 of 3 in map.json check out against the disk.');
+  assert.equal(res.detail, 'Kept in map.json: 3 of 3 boxes and 3 of 3 arrows. For those shown, the named files and folders were found in the open folder, and each quote was found in its file. Labels are not checked; important parts may be missing.');
 });
 
 test('what was dropped counts against the total', () => {
@@ -38,7 +38,7 @@ test('what was dropped counts against the total', () => {
     dropped: [{ what: 'box' }, { what: 'arrow' }, { what: 'arrow' }],
   });
   assert.deepEqual([res.state, res.checked, res.total], ['dropped', 1, 4]);
-  assert.equal(res.detail, 'Boxes 1 of 2 and arrows 0 of 2 in map.json check out against the disk.');
+  assert.equal(res.detail, 'Kept in map.json: 1 of 2 boxes and 0 of 2 arrows. For those shown, the named files and folders were found in the open folder, and each quote was found in its file. Labels are not checked; important parts may be missing.');
 });
 
 test('without Git, a file is new, changed or deleted against what was there at the start', () => {

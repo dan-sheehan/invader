@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>next-invader</title>
+  <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <button id="root" type="button" class="mono" aria-haspopup="dialog" title="Switch folder (⌘O)"><span id="root-name"></span><span class="chev" aria-hidden="true"></span></button>
+    <span id="strip" aria-label="Status"></span>
+    <span id="note" class="muted" role="status"></span>
+    <button id="goto" type="button" class="quiet" title="Go to any file or folder here by name">Go to file<kbd>⌘P</kbd></button>
+    <button id="map-ask" type="button">Build map</button>
+  </header>
+  <main>
+    <section id="left" aria-label="Folder">
+      <div id="tree" aria-label="Folder contents"></div>
+    </section>
+    <div class="split" id="split-left" role="separator" aria-orientation="vertical" aria-label="Resize the folder pane" title="Drag to resize · double-click to reset"></div>
+    <section id="file" aria-label="File">
+      <div id="tabbar">
+        <div id="nav" role="group" aria-label="Back and forward">
+          <button id="nav-back" type="button" class="quiet" aria-label="Back" disabled>‹</button>
+          <button id="nav-forward" type="button" class="quiet" aria-label="Forward" disabled>›</button>
+        </div>
+        <div id="tabs" role="tablist" aria-label="Open"></div>
+      </div>
+      <div id="replay" aria-label="Replay" hidden></div>
+      <div id="file-head"></div>
+      <div id="find" role="search" hidden>
+        <input id="find-input" type="text" spellcheck="false" autocomplete="off" placeholder="Find in what is shown" aria-label="Find in what is shown">
+        <span id="find-count" class="mono dim" aria-live="polite"></span>
+        <button id="find-prev" type="button" class="quiet" title="Previous (⇧Return or ⇧⌘G)" aria-label="Previous">↑</button>
+        <button id="find-next" type="button" class="quiet" title="Next (Return or ⌘G)" aria-label="Next">↓</button>
+        <button id="find-case" type="button" class="quiet" title="Match upper and lower case as typed" aria-pressed="false">Aa</button>
+        <button id="find-close" type="button" class="quiet" title="Close (Esc)" aria-label="Close">×</button>
+      </div>
+      <div id="file-body" tabindex="-1"></div>
+    </section>
+    <div class="split" id="split-right" role="separator" aria-orientation="vertical" aria-label="Resize the terminal" title="Drag to resize · double-click to reset"></div>
+    <section id="terminal" aria-label="Terminal">
+      <div id="term-bar">
+        <span id="term-tabs" role="tablist" aria-label="Terminals"></span>
+        <button id="term-new" type="button" class="quiet" title="New terminal in the folder shown (⌘T)" aria-label="New terminal">+</button>
+        <span id="term-where" class="mono"></span>
+        <button id="term-toggle" type="button" class="quiet" title="Hide the terminals (⇧⌘J). What runs in them keeps running." aria-label="Hide the terminals"><span class="long-label">Hide</span><span class="short-label">›</span></button>
+      </div>
+      <div id="term"><button id="term-empty" type="button" class="quiet" hidden>No terminal open. New terminal <kbd>⌘T</kbd></button></div>
+      <div id="paste-ask" hidden></div>
+      <div id="term-tip" class="mono" hidden></div>
+      <button id="term-open" type="button" title="Show the terminal (⇧⌘J)">Terminal</button>
+    </section>
+  </main>
+  <div id="palette" hidden>
+    <div class="palette-box" role="dialog" aria-modal="true">
+      <input id="palette-input" type="text" spellcheck="false" autocomplete="off" aria-controls="palette-list">
+      <div id="palette-list" role="listbox"></div>
+      <div id="palette-foot" class="dim"></div>
+    </div>
+  </div>
+  <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+  <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+  <script src="state.js"></script>
+  <script src="refs.js"></script>
+  <script src="markdown.js"></script>
+  <script src="tree.js"></script>
+  <script src="file.js"></script>
+  <script src="code.js"></script>
+  <script src="map-view.js"></script>
+  <script src="setup-view.js"></script>
+  <script src="home.js"></script>
+  <script src="replay.js"></script>
+  <script src="whose.js"></script>
+  <script src="changes.js"></script>
+  <script src="paste.js"></script>
+  <script src="terminal.js"></script>
+  <script src="preview.js"></script>
+  <script src="fuzzy.js"></script>
+  <script src="palette.js"></script>
+  <script src="find.js"></script>
+  <script src="history.js"></script>
+  <script src="layout.js"></script>
+  <script src="start.js"></script>
+</body>
+</html>

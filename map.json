@@ -1,0 +1,51 @@
+{
+  "groups": [
+    { "label": "At the top", "boxes": [
+      { "id": "docs", "label": "How to use it, and rules for agents", "paths": ["README.md", "HARNESS.md", "AGENTS.md", "CLAUDE.md"] },
+      { "id": "notes", "label": "Decisions, plumbing and design", "paths": ["decisions.md", "plumbing.md", "design.md"] },
+      { "id": "start", "label": "How it starts", "paths": ["package.json"] },
+      { "id": "kit", "label": "Blank kit", "paths": ["kit/"] },
+      { "id": "bench", "label": "Model benchmarks", "paths": ["bench/"] }
+    ]},
+    { "label": "main/: starts the app", "boxes": [
+      { "id": "app", "label": "App and window", "paths": ["main/main.js", "main/preload.js"] }
+    ]},
+    { "label": "main/: does the work", "boxes": [
+      { "id": "disk", "label": "Reads the folder", "paths": ["main/disk.js"] },
+      { "id": "changes", "label": "Watches what changed", "paths": ["main/changes.js", "main/status.js"] },
+      { "id": "shell", "label": "Runs the shell", "paths": ["main/shell.js"] },
+      { "id": "setup", "label": "Finds the agent setup", "paths": ["main/setup.js", "main/redact.js", "main/toml.js"] },
+      { "id": "sessions", "label": "Reads the last sessions", "paths": ["main/sessions.js"] },
+      { "id": "links", "label": "Finds links to nothing", "paths": ["main/links.js"] },
+      { "id": "check", "label": "Checks maps", "paths": ["main/map.js"] }
+    ]},
+    { "label": "window/: what you see", "boxes": [
+      { "id": "page", "label": "The page and its look", "paths": ["window/index.html", "window/style.css", "window/state.js", "window/start.js", "window/changes.js", "window/whose.js"] },
+      { "id": "files", "label": "Tree, files and Markdown", "paths": ["window/tree.js", "window/file.js", "window/markdown.js"] },
+      { "id": "mapview", "label": "Draws the map", "paths": ["window/map-view.js"] },
+      { "id": "setupview", "label": "Setup page, summary and replay", "paths": ["window/setup-view.js", "window/home.js", "window/replay.js"] },
+      { "id": "term", "label": "Terminal pane", "paths": ["window/terminal.js", "window/paste.js"] }
+    ]}
+  ],
+  "arrows": [
+    { "from": "docs", "to": "kit", "label": "explains", "file": "README.md", "text": "[kit/README.md](kit/README.md)" },
+    { "from": "docs", "to": "notes", "label": "sends agents to", "file": "HARNESS.md", "text": "read [decisions.md](decisions.md) for what is decided" },
+    { "from": "bench", "to": "check", "label": "scores maps with", "file": "bench/bench.js", "text": "const { checkMap } = require('../main/map');" },
+    { "from": "bench", "to": "mapview", "label": "asks for a map as", "file": "bench/bench.js", "text": "path.join(APP, 'window', 'map-view.js')" },
+    { "from": "start", "to": "app", "label": "starts", "file": "package.json", "text": "\"main\": \"main/main.js\"" },
+    { "from": "app", "to": "disk", "label": "asks to read files", "file": "main/main.js", "text": "const disk = require('./disk');" },
+    { "from": "app", "to": "changes", "label": "starts watching", "file": "main/main.js", "text": "const changes = require('./changes');" },
+    { "from": "app", "to": "shell", "label": "runs the terminal with", "file": "main/main.js", "text": "const shell = require('./shell');" },
+    { "from": "app", "to": "setup", "label": "asks what the agent is told", "file": "main/main.js", "text": "const setup = require('./setup');" },
+    { "from": "disk", "to": "check", "label": "checks maps with", "file": "main/disk.js", "text": "const { checkMap, locate } = require('./map');" },
+    { "from": "app", "to": "page", "label": "opens", "file": "main/main.js", "text": "win.loadFile(path.join(APP, 'window', 'index.html'));" },
+    { "from": "files", "to": "disk", "label": "reads files through", "file": "window/file.js", "text": "window.disk.readFile(" },
+    { "from": "setupview", "to": "setup", "label": "shows", "file": "window/setup-view.js", "text": "window.disk.setup()" },
+    { "from": "app", "to": "sessions", "label": "asks what the agent did", "file": "main/main.js", "text": "const sessions = require('./sessions');" },
+    { "from": "setupview", "to": "sessions", "label": "shows and replays", "file": "window/replay.js", "text": "window.disk.steps(session.id)" },
+    { "from": "page", "to": "sessions", "label": "outlines what the agent reads from", "file": "window/changes.js", "text": "window.disk.live()" },
+    { "from": "app", "to": "links", "label": "asks what points at nothing", "file": "main/main.js", "text": "const links = require('./links');" },
+    { "from": "setupview", "to": "links", "label": "shows", "file": "window/home.js", "text": "window.disk.brokenLinks(walk)" },
+    { "from": "term", "to": "shell", "label": "types into", "file": "window/terminal.js", "text": "window.terminal.input(t.id, data);" }
+  ]
+}

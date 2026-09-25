@@ -1,7 +1,7 @@
 // Checks a map.json against the disk. The file is data: it is parsed, never
 // run, and nothing drawn in the window comes from it except checked text.
 //
-// A file that is not JSON or not the shape in GUIDE.md is refused whole.
+// A file that is not JSON or not the shape in README.md is refused whole.
 // A box whose paths do not all exist is dropped, and so is an arrow whose
 // boxes, file or text do not hold. Every drop is listed with its reason.
 

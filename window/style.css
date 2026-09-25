@@ -1,0 +1,791 @@
+/* Tokens from design.md. Dark only. */
+:root {
+  --bg: #1a1a1a;
+  --side: #151515;
+  --hover: #222222;
+  --sel: #272727;
+  --line: #2a2a2a;
+  --border: #363636;
+  --line-strong: #4a4a4a;
+  --text: #d6d6d6;
+  --strong: #ffffff;
+  --muted: #8c8c8c;
+  --dim: #5f5f5f;
+  --pos: #4ea1ff;
+  --folder: #9a9a9a;
+  --error: #f26b6b;
+  --changed: #e2c08d;
+
+  /* Parts of the map. Each group on the top map has one, in order, and its
+     files carry it in the tree and on their tabs. */
+  --part-1: #a896f0;
+  --part-2: #5cc4d4;
+  --part-3: #e592b8;
+  --part-4: #b1cc78;
+  --part-5: #9fb0c8;
+
+  /* Who: claude and codex, wherever the window names them. */
+  --claude: #d97757;
+  --codex: #62d0a4;
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, monospace;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: #3a4a60; }
+:focus-visible { outline: 2px solid var(--pos); outline-offset: -2px; }
+#file-body:focus { outline: none; }
+body.resizing, body.resizing * { cursor: col-resize !important; user-select: none; }
+
+/* Scrollbars stay thin and quiet until they are needed. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: transparent; border: 3px solid transparent; border-radius: 6px; background-clip: padding-box; }
+:hover::-webkit-scrollbar-thumb { background-color: #3a3a3a; }
+::-webkit-scrollbar-thumb:hover { background-color: #555; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.mono { font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--muted); }
+.dim { color: var(--dim); }
+.error { color: var(--error); }
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 6px 10px;
+  min-height: 46px;
+  padding: 6px 12px 6px 10px;
+  background: var(--side);
+  border-bottom: 1px solid var(--line);
+  flex: none;
+  overflow: hidden;
+}
+
+/* The folder's name: click it, or ⌘O, to switch folder. */
+#root {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 34ch;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--strong);
+  border-color: transparent;
+}
+#root:hover { border-color: var(--border); background: var(--hover); }
+#root-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#root .chev { flex: none; width: 6px; height: 6px; margin-top: -3px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); }
+
+/* Routine status stays quiet; changed files, failures and live work stand out. */
+#strip { display: flex; align-items: center; flex-wrap: nowrap; gap: 2px; min-width: 0; overflow: hidden; }
+#strip .cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+#strip .value { font-family: var(--mono); font-size: 12px; color: var(--text); }
+#strip .watch .value, #strip .branch .value, #strip .agent .value { color: var(--muted); }
+#strip .cell.live { color: var(--text); }
+#strip .value.dim { color: var(--dim); }
+#strip .value.error { color: var(--error); }
+#strip .value.chg { color: var(--changed); margin: 0; font-size: 12px; }
+#strip .cell { border-radius: 4px; }
+#strip .cell.go { cursor: pointer; }
+#strip .cell.go:hover { background: var(--hover); color: var(--text); }
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+button:hover { background: var(--hover); border-color: var(--line-strong); }
+button:disabled { color: var(--dim); cursor: default; background: transparent; border-color: var(--line); }
+button.quiet { border-color: transparent; color: var(--muted); }
+button.quiet:hover { color: var(--text); background: var(--hover); border-color: transparent; }
+button.primary { color: var(--strong); border-color: color-mix(in srgb, var(--pos) 70%, transparent); }
+button.primary:hover { background: color-mix(in srgb, var(--pos) 14%, transparent); border-color: var(--pos); }
+kbd { font: 11px var(--mono); color: var(--dim); margin-left: 8px; }
+#goto { margin-left: auto; display: flex; align-items: center; }
+#goto:hover kbd { color: var(--muted); }
+header button { flex: none; white-space: nowrap; }
+#note { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#note.ok { color: var(--text); }
+#note:not(:empty) { padding: 2px 8px; }
+
+/* The panes: the folder, the middle and the terminal, with a line between
+   each I can drag. Their widths are remembered. */
+main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  --left: 260px;
+  --right: 460px;
+}
+main > section { overflow: auto; min-width: 0; }
+#left { flex: none; width: var(--left); background: var(--side); }
+#file { flex: 1 1 0; min-width: 0; }
+#terminal { flex: none; width: var(--right); background: var(--side); }
+.split { flex: none; width: 1px; background: var(--line); position: relative; z-index: 4; cursor: col-resize; }
+.split::before { content: ''; position: absolute; top: 0; bottom: 0; left: -4px; right: -4px; }
+.split::after { content: ''; position: absolute; top: 0; bottom: 0; left: -1px; right: -1px; background: var(--pos); opacity: 0; transition: opacity 0.15s ease 0.1s; }
+.split:hover::after, .split.on::after { opacity: 0.8; }
+main.term-hidden #split-right { cursor: default; pointer-events: none; }
+
+/* Left: the folder, then agent setup and the kit. */
+#tree .places { padding-top: 4px; margin-top: 8px; border-top: 1px solid var(--line); }
+.setup-row { cursor: pointer; }
+.setup-row:hover { background: var(--hover); }
+#left { display: flex; flex-direction: column; overflow: hidden; }
+
+/* Tabs over the middle: the folder's own page first, then what I opened. */
+#tabbar { flex: none; display: flex; background: var(--side); border-bottom: 1px solid var(--line); }
+#tabs { flex: 1 1 auto; min-width: 0; display: flex; overflow-x: auto; scrollbar-width: none; margin-bottom: -1px; }
+/* Back and forward, before the tabs. */
+#nav { flex: none; display: flex; align-items: center; gap: 0; padding: 0 4px 0 6px; border-right: 1px solid var(--line); }
+#nav button { padding: 0 7px; font-size: 17px; line-height: 26px; }
+#nav button:disabled { color: var(--dim); opacity: 0.5; border-color: transparent; }
+#tabs::-webkit-scrollbar { display: none; }
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  max-width: 240px;
+  height: 34px;
+  padding: 0 6px 0 14px;
+  color: var(--muted);
+  border: none;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); background: var(--hover); }
+.tab.on { color: var(--strong); background: var(--bg); }
+.tab.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--pos); }
+.tab.home { padding-right: 14px; }
+.tab-name { overflow: hidden; text-overflow: ellipsis; }
+.tab-close { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; color: var(--dim); visibility: hidden; }
+.tab:hover .tab-close, .tab.on .tab-close { visibility: visible; }
+.tab-close:hover { color: var(--strong); background: var(--sel); }
+/* A file edited and not saved: a dot where its × is, until the pointer is on it. */
+.tab.draft .tab-close { visibility: visible; font-size: 0; }
+.tab.draft .tab-close::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--text); }
+.tab.draft .tab-close:hover { font-size: inherit; }
+.tab.draft .tab-close:hover::before { display: none; }
+
+/* A folder with no map.json, drawn from the folder: a box for each folder in
+   it, a row for each file, then its README. */
+.folder-boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.folder-map .map-box { min-height: 76px; }
+.folder-has-map { color: var(--text); }
+.folder-files { max-width: 70ch; }
+.folder-files .map-group-label { min-height: 0; margin-bottom: 6px; }
+.folder-files .row { padding-left: 2px; }
+.folder-readme { margin: 0 20px; padding: 16px 0 32px; border-top: 1px solid var(--line); }
+.folder-readme > .link { display: inline-block; color: var(--muted); }
+
+/* A box on a map that stands for one folder can be walked into. */
+.map-open { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: var(--muted); }
+.map-open:hover { color: var(--strong); }
+
+/* The trail at the top of a file or folder: where it sits, to go back up. */
+.crumbs { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
+#file-head > .crumbs { font-size: 13px; }
+.crumbs .link { color: var(--muted); text-decoration: none; }
+.crumbs .link:hover { color: var(--strong); text-decoration: underline; }
+.crumb-gap { color: var(--dim); }
+.crumb-here { color: var(--strong); }
+
+/* The changes page. */
+#changes { padding: 8px 8px 24px; }
+.changes-head { padding: 4px 12px 8px; color: var(--muted); }
+#changes .row .chg { display: inline-block; width: 9ch; margin: 0; }
+/* The files one of the last sessions changed are listed under a line saying
+   which: its agent, when, and what it was asked, cut to fit. */
+.changes-group { display: flex; gap: 8px; align-items: baseline; padding: 10px 12px 2px; color: var(--muted); white-space: nowrap; }
+.changes-group .changes-said { color: var(--text); overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.changes-group .link { flex: none; }
+#changes .row.gone { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--dim); }
+
+/* Tree. */
+#tree { flex: 1; overflow: auto; padding: 6px 0 24px; }
+.row {
+  padding: 2px 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 2px solid transparent;
+  cursor: default;
+}
+.row[data-path] { cursor: pointer; }
+.row[data-path]:hover { background: var(--hover); }
+.row.dir { color: var(--folder); }
+.row.hidden, .row.hidden-note { color: var(--dim); }
+.row.hidden-note { cursor: pointer; }
+.row.hidden-note:hover { background: var(--hover); color: var(--muted); }
+.row.recent { border-left-color: var(--changed); }
+.row.sel { background: var(--sel); border-left-color: var(--pos); color: var(--strong); }
+#tree > .row.dir.open:first-child { color: var(--muted); padding-top: 2px; padding-bottom: 6px; }
+.empty { padding: 12px; color: var(--dim); }
+
+/* File. */
+#file { position: relative; container-type: inline-size; display: flex; flex-direction: column; overflow: hidden; }
+#file-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 12px 0 20px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+}
+#file-head:empty { display: none; }
+/* The open file changed in the last few seconds: the line under its name
+   turns the changed colour, fading in over 0.4 s and out over 1 s. */
+#file-head { transition: border-bottom-color 1s ease; }
+#file-head.recent { border-bottom-color: var(--changed); transition-duration: 0.4s; }
+#file-head > span:first-child { color: var(--strong); font-size: 14px; overflow: hidden; text-overflow: ellipsis; }
+
+.switch { margin-left: auto; display: flex; flex: none; }
+.switch button { border-radius: 0; padding: 2px 10px; color: var(--muted); }
+.switch button:first-child { border-radius: 5px 0 0 5px; }
+.switch button:last-child { border-radius: 0 5px 5px 0; border-left: none; }
+.switch button.on { color: var(--strong); border-color: var(--line-strong); }
+
+#file-body { flex: 1; overflow: auto; min-height: 0; }
+#file-body .empty { color: var(--muted); }
+
+/* A file's plain text. Long lines wrap, like in the editor, so the pane
+   never scrolls sideways. */
+pre.plain {
+  margin: 0;
+  padding: 16px 20px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+}
+
+/* A Markdown file's plain text, editable. It grows with its text, so the
+   pane scrolls rather than the text area, and long lines wrap. */
+textarea.plain {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 16px 20px 40vh;
+  line-height: 1.6;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  line-height: inherit;
+  white-space: pre-wrap;
+  tab-size: 4;
+  field-sizing: content;
+}
+.file-note { padding: 12px 20px 0; }
+.edit-actions { margin-left: auto; display: flex; align-items: center; flex: none; gap: 8px; }
+.edit-actions ~ .switch { margin-left: 0; }
+.edit-status { color: var(--dim); font-size: 12px; margin-right: 4px; }
+.edit-status.dirty { color: var(--text); }
+.edit-status.error { color: var(--error); }
+.edit-status.dirty::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--text); vertical-align: 1px; }
+/* Over the editor: the file changed on disk under my edit, or a save failed. */
+.edit-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; padding: 10px 20px; background: color-mix(in srgb, var(--changed) 9%, var(--bg)); border-bottom: 1px solid color-mix(in srgb, var(--changed) 45%, transparent); }
+.edit-bar.error { background: color-mix(in srgb, var(--error) 9%, var(--bg)); border-bottom-color: color-mix(in srgb, var(--error) 45%, transparent); }
+.edit-bar-said { flex: 1 1 320px; color: var(--strong); }
+.edit-bar[hidden] { display: none; }
+
+/* Rendered Markdown. */
+.md {
+  max-width: 80ch;
+  padding: 8px 28px 40px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
+  color: var(--strong);
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 1.4em 0 0.5em;
+}
+.md h1 { font-size: 20px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.md h2 { font-size: 17px; }
+.md h3 { font-size: 15px; }
+.md h4, .md h5, .md h6 { font-size: 14px; }
+.md p, .md ul, .md ol, .md blockquote, .md pre, .md table { margin: 0 0 0.9em; }
+.md ul, .md ol { padding-left: 22px; }
+.md li.task { list-style: none; margin-left: -18px; }
+.md strong { color: var(--strong); font-weight: 600; }
+.md code { font-size: 12px; }
+.md p code, .md li code, .md td code, .md th code {
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+.md pre {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow-x: auto;
+}
+.md blockquote {
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+  color: var(--muted);
+}
+.md hr { border: none; border-top: 1px solid var(--line); margin: 1.4em 0; }
+.md table { border-collapse: collapse; font-size: 13px; }
+.md th, .md td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+.md th { color: var(--strong); font-weight: 600; }
+
+/* A folder's README title, and which folders have a map. */
+.row .title { color: var(--muted); font-family: var(--sans); margin-left: 12px; }
+.mark { color: var(--dim); font-family: var(--mono); font-size: 11px; margin-left: 8px; }
+#root { cursor: pointer; }
+#root:hover { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+
+/* A cited text in a plain file. */
+mark { background: transparent; color: var(--strong); outline: 1px solid var(--pos); }
+
+/* Map. */
+.map { padding: 16px 20px 32px; }
+.map-sum { margin-bottom: 24px; }
+.map-count { margin-right: auto; }
+.map-meta { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); margin-bottom: 6px; }
+.map-check { color: var(--text); line-height: 1.6; max-width: 80ch; }
+.map-error { white-space: pre-wrap; }
+/* Aligned headings give the map a steady starting point. Under them, each
+   group's boxes sit in the middle of the height the tallest group takes, so
+   a short group does not hug the top, and a map narrower than the pane sits
+   in the middle of it. */
+.map-canvas {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: var(--gap, 128px);
+  width: max-content;
+  margin: 0 auto;
+  padding: 4px 96px 4px 0;
+}
+.map-group > .map-group-label + .map-box { margin-top: auto; }
+.map-group > .map-box:last-child { margin-bottom: auto; }
+.map-lines { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.map-lines .arrow { pointer-events: auto; cursor: pointer; }
+.map-lines .arrow-label { opacity: 0; }
+.map-lines .arrow-label.on, .map-lines .arrow-label.hover, .map-lines .arrow-label.live, .map-lines .arrow-label:focus-visible { opacity: 1; }
+.map-lines .arrow.quiet:not(.live):not(.hover):not(.arrow-label) { opacity: 0.2; }
+.map-lines .arrow:focus-visible { outline: none; }
+.map-lines .arrow:focus-visible text { fill: var(--pos); }
+.map-lines .line { fill: none; stroke: color-mix(in srgb, var(--g, var(--line-strong)) 50%, var(--line-strong)); stroke-width: 1; }
+.map-lines .hit { fill: none; stroke: transparent; stroke-width: 10; }
+.map-lines .label-back { fill: var(--bg); }
+.map-lines text { fill: var(--text); font: 12px var(--sans); }
+/* Arrows into and out of the box the agent is working in are brighter. */
+.map-lines .line { transition: stroke 0.8s ease; }
+.map-lines text { transition: fill 0.8s ease; }
+.map-lines .arrow.live .line { stroke: var(--text); }
+.map-lines .arrow.live text { fill: var(--text); }
+.map-lines .arrow.hover .line, .map-lines .arrow.on .line { transition: none; }
+.map-lines .arrow.hover .line { stroke: var(--text); }
+.map-lines .arrow.on .line { stroke: var(--pos); }
+.map-lines .arrow.on text { fill: var(--strong); }
+
+.map-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: var(--col, 224px);
+}
+.map-group-label { color: var(--g, var(--muted)); font-size: 13px; min-height: 40px; padding: 0 0 8px; border-bottom: 1px solid color-mix(in srgb, var(--g, var(--line-strong)) 55%, transparent); }
+.map-box {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  min-height: 84px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--g, var(--border));
+  border-radius: 3px;
+  cursor: pointer;
+}
+.map-box:hover { border-color: var(--muted); background: var(--hover); }
+.map-box:focus-visible { outline: 2px solid var(--pos); outline-offset: 3px; }
+.map-box.on, .map-box.changed.on { border-color: var(--pos); border-left-color: var(--g, var(--pos)); }
+.map-box[aria-pressed="true"] { background: var(--sel); }
+.map-box-label { color: var(--strong); font-size: 15px; line-height: 1.4; margin-bottom: 4px; }
+.map-path { color: var(--muted); margin-top: auto; padding-top: 6px; }
+
+.map-detail { display: none; }
+.map:has(.map-detail.selected) { padding-bottom: 230px; }
+#file-body:has(.map-detail.selected) { scroll-padding-bottom: 230px; }
+.map-detail.selected { display: block; position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; height: 210px; padding: 16px 20px; background: var(--bg); border-top: 1px solid var(--pos); overflow: auto; }
+.map-detail-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.map-detail-head strong { font-size: 16px; font-weight: 500; color: var(--strong); }
+.map-detail-head > button { flex: none; }
+.map-detail-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 24px; }
+.map-files { display: flex; flex-direction: column; align-items: flex-start; }
+.map-file, .map-connection { background: none; border: none; border-radius: 0; padding: 2px 0; text-align: left; overflow-wrap: anywhere; }
+.map-connections { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 8px 24px; align-content: start; }
+.map-connection { display: flex; flex-direction: column; font-size: 13px; }
+.map-connection-end { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+.map-relation { margin-bottom: 8px; }
+.map-quote { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0 0; color: var(--strong); }
+.map-dropped { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.map-dropped > div { padding: 1px 0; }
+
+.link {
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.link:hover { color: var(--strong); text-decoration-color: var(--text); }
+
+/* Terminal. Hidden, it is a thin strip on the right that opens it again. */
+#terminal { overflow: hidden; position: relative; display: flex; flex-direction: column; }
+#term-bar { flex: none; display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 6px 0 14px; border-bottom: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+#term-bar::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--dim); transition: background 0.2s ease; }
+#terminal.focused #term-bar::before { background: var(--pos); }
+#terminal.focused #term-bar { color: var(--text); }
+#term-tabs { display: flex; align-items: stretch; align-self: stretch; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.term-tab { display: flex; align-items: center; gap: 6px; padding: 0 2px 0 8px; color: var(--muted); cursor: pointer; position: relative; flex: none; }
+.term-tab:hover { color: var(--text); background: var(--hover); }
+.term-tab.on { color: var(--strong); }
+.term-tab.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--line-strong); }
+#terminal.focused .term-tab.on::after { background: var(--pos); }
+.term-tab.ended .term-name { color: var(--dim); }
+.term-dir { color: var(--dim); font-size: 11px; }
+/* A long name I gave a terminal is cut short, so the other tabs stay in view. */
+.term-name { max-width: 18ch; overflow: hidden; text-overflow: ellipsis; }
+.term-rename { width: 18ch; }
+.term-close { padding: 0 5px; line-height: 16px; visibility: hidden; }
+.term-tab:hover .term-close, .term-tab.on .term-close { visibility: visible; }
+.term-rename { width: 9em; font-size: 12px; padding: 1px 4px; background: var(--bg); color: var(--strong); border: 1px solid var(--pos); border-radius: 3px; }
+#term-new { flex: none; padding: 0 8px; font-size: 15px; line-height: 20px; }
+#term-where { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--dim); font-size: 11px; }
+#term-toggle { flex: none; padding: 2px 8px; }
+#term { position: relative; }
+.term-box { height: 100%; }
+.term-box[hidden] { display: none; }
+#term-empty { margin: 12px 0; }
+#term-empty[hidden] { display: none; }
+/* Asking before a paste into the shell: laid over the top of the terminal,
+   so the shell keeps its size. */
+#paste-ask { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line-strong); padding: 12px 14px 14px; }
+#paste-ask p { margin: 0 0 8px; }
+#paste-ask .paste-said { color: var(--strong); }
+#paste-ask .paste-lines { margin: 0 0 12px; padding: 6px 8px; border: 1px solid var(--line); max-height: 12em; overflow: auto; white-space: pre; color: var(--muted); }
+#paste-ask .paste-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+#term { flex: 1; min-height: 0; padding: 8px 4px 4px 12px; }
+#term .xterm-viewport { background: transparent !important; }
+#term-open { display: none; }
+/* Only the map: the tree, the terminal and the summary step aside. */
+main.map-only > #left, main.map-only > #terminal, main.map-only > .split, main.map-only #file-body .home { display: none; }
+
+main.term-hidden #terminal { width: 28px; }
+main.term-hidden #term, main.term-hidden #term-bar { display: none; }
+main.term-hidden #term-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 12px 0;
+  border: none;
+  border-radius: 0;
+  writing-mode: vertical-rl;
+  text-align: start;
+  color: var(--muted);
+}
+main.term-hidden #term-open:hover { color: var(--text); }
+main.term-hidden #term-open.waiting { color: var(--strong); }
+
+/* Changed files: a word in the changed colour. */
+.chg { color: var(--changed); font-family: var(--mono); font-size: 11px; margin-left: 8px; }
+.map-box.changed { border-color: var(--changed); }
+/* The box the agent is working in pulses gently: an outline in the changed
+   colour that brightens and dims. window/changes.js fades it in and out as the work
+   comes and goes, and sets --beat to keep the pulse in time with the clock. */
+.map-box::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1px solid var(--changed);
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+}
+.map-box.recent::after, .map-box.fading::after { animation: pulse 2.4s ease-in-out var(--beat, 0ms) infinite; }
+.map-box.recent::after { opacity: 1; }
+@keyframes pulse {
+  0%, 100% { border-color: color-mix(in srgb, var(--changed) 30%, transparent); }
+  50% { border-color: var(--changed); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-box.recent::after, .map-box.fading::after { animation: none; }
+  .map-lines .line, .map-lines text, #file-head { transition: none; }
+}
+.map-box .chg { margin: 2px 0 0; }
+/* Replaying a session: the box the step shown changed gets a steady outline
+   in the changed colour, a box it read or named in a command one in the text
+   colour. Live, a box whose files the agent read or named in a command in
+   the last few seconds gets the text colour one too, unless it pulses. In the
+   tree, the row's left edge does the same. */
+.map-box.step::after, .map-box.looked:not(.recent)::after { opacity: 1; animation: none; }
+.map-box.step::after { border-color: var(--changed); }
+.map-box.looked:not(.recent)::after, .map-box.unlooking:not(.recent)::after { border-color: var(--text); }
+.row.looked { border-left-color: var(--text); }
+/* The agent's newest step, in the strip. A long file name is cut short. */
+#strip .cell.live .file { max-width: 24ch; overflow: hidden; text-overflow: ellipsis; }
+
+/* Agent setup: a page of sections, each item a few short lines. */
+.setup { max-width: 90ch; padding: 4px 20px 32px; }
+.setup h2 { color: var(--strong); font-size: 15px; font-weight: 600; margin: 1.4em 0 0; }
+.setup h2 + p { margin: 0 0 8px; }
+.setup-item { padding: 6px 0 8px; border-top: 1px solid var(--line); }
+/* The agent's name takes a fixed width, in pixels rather than ch, so every
+   line under it starts at the same x whatever its font. */
+.setup-top { display: flex; align-items: baseline; gap: 10px; }
+.setup-agent { color: var(--muted); width: 44px; flex: none; }
+.setup-name { color: var(--strong); overflow-wrap: anywhere; }
+.setup-scope { margin-left: auto; color: var(--muted); white-space: nowrap; flex: none; }
+.setup-line { margin-left: 54px; overflow-wrap: anywhere; }
+.setup-file { color: var(--muted); }
+.setup-item.off .setup-name { color: var(--muted); }
+.setup-more { padding: 4px 0 0 54px; color: var(--muted); }
+.setup-note { padding: 12px 12px 0; }
+.setup-back { margin-left: auto; }
+
+/* What happened here: under the open folder's map or README. */
+.home { margin: 0 20px; padding: 16px 0 24px; border-top: 1px solid var(--line); }
+.home:empty { display: none; }
+.home-label { display: inline-block; color: var(--text); font-weight: 600; margin: 0 0 6px; }
+.home-sessions, .home-commits, .home-broken { margin-top: 12px; min-width: 0; }
+.home-commit { display: flex; gap: 12px; padding: 1px 0; }
+.home-commit > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-when { flex: none; width: 96px; font-size: 12px; } /* pixels, so sans and mono rows line up */
+.home-file { flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-session { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 0 8px; padding: 0 0 8px; }
+.home-session .home-when { grid-column: 3; grid-row: 1; width: auto; text-align: right; }
+.home-session .home-who { grid-column: 1; grid-row: 1; }
+.home-session .home-text { display: contents; }
+.home-session .home-said { grid-column: 2; grid-row: 1; }
+.home-session .home-did { grid-column: 2 / -1; }
+.home-who { flex: none; width: 6ch; }
+.home-text { flex: 1; min-width: 0; }
+.home-said { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-did { color: var(--muted); overflow-wrap: anywhere; }
+.home-commits { color: var(--muted); }
+@container (min-width: 760px) {
+  .home { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 12px 24px; }
+  .home > :not(.home-sessions):not(.home-commits) { grid-column: 1 / -1; }
+  .home-sessions, .home-commits, .home-broken { margin-top: 0; }
+}
+
+/* The replay bar, above the file or map, while a session is replayed. */
+#replay { flex: none; padding: 8px 20px 9px; border-bottom: 1px solid var(--line); }
+.replay-top, .replay-step { display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+.replay-said { color: var(--strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.replay-controls { margin-left: auto; flex: none; color: var(--muted); }
+.replay-step { margin-top: 2px; }
+/* The step stays on one line: its files are cut short before anything else. */
+.replay-step > span { flex: none; white-space: nowrap; }
+.replay-step .mono { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+/* The timeline: a tick per step, drawn on the canvas, and the step shown. */
+.replay-line { position: relative; height: 12px; margin-top: 8px; cursor: pointer; touch-action: none; }
+.replay-line canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.replay-at { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--pos); pointer-events: none; }
+.chg-word { color: var(--changed); }
+
+/* A part's colour: a small square before a row in the tree or on the changes
+   page, and before a file's tab. A folder that holds only one part's files
+   gets the square as an outline. Rows with no part keep the room, so names
+   line up. */
+#tree .row::before, #changes .row::before, .folder-files .row::before, .tab.file::before {
+  content: '';
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 2px;
+  vertical-align: 1px;
+  background: var(--g, transparent);
+}
+#tree .row.part-in::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--g); }
+/* Tabs do not line up in a column, so a tab with no part keeps no room. */
+.tab.file:not([style*="--g"])::before { display: none; }
+
+/* Who: claude and codex keep their colour wherever they are named. */
+.who-claude, #strip .value.who-claude { color: var(--claude); }
+.who-codex, #strip .value.who-codex { color: var(--codex); }
+
+/* The palette: go to a file (⌘P) or switch folder (⌘O), by typing. */
+#palette { position: fixed; inset: 0; z-index: 20; display: flex; justify-content: center; align-items: flex-start; padding-top: 12vh; background: rgba(0, 0, 0, 0.35); }
+#palette[hidden] { display: none; }
+.palette-box { width: min(640px, calc(100vw - 48px)); max-height: 64vh; display: flex; flex-direction: column; background: #1f1f1f; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+#palette-input { flex: none; font: 15px var(--sans); color: var(--strong); background: transparent; border: none; border-bottom: 1px solid var(--line); padding: 14px 16px; outline: none; }
+#palette-input::placeholder { color: var(--dim); }
+#palette-list { flex: 1; overflow: auto; padding: 6px; }
+.palette-row { display: flex; align-items: baseline; gap: 10px; padding: 6px 10px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+.palette-row::before { content: ''; flex: none; align-self: center; width: 7px; height: 7px; border-radius: 2px; background: var(--g, transparent); }
+.palette-row.on { background: color-mix(in srgb, var(--pos) 16%, transparent); }
+.palette-row.dim { cursor: default; opacity: 0.55; }
+.palette-label { color: var(--strong); flex: none; max-width: 60%; overflow: hidden; text-overflow: ellipsis; }
+.palette-label.mono { font-size: 13px; }
+.palette-detail { color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.palette-row b { color: var(--pos); font-weight: 600; }
+.palette-detail b { color: var(--text); }
+.palette-note { margin-left: auto; flex: none; padding-left: 12px; color: var(--muted); font-size: 12px; }
+.palette-empty { padding: 14px 10px; color: var(--muted); }
+#palette-foot { flex: none; padding: 7px 16px; border-top: 1px solid var(--line); font-size: 12px; }
+
+/* Under a map that cannot be drawn: what to do, then the folder drawn from the disk. */
+.map-fix { margin-top: 10px; }
+.map-fallback:not(:empty) { border-top: 1px solid var(--line); margin: 0 20px; }
+.map-fallback > .map { padding-left: 0; padding-right: 0; }
+.map-fallback > .folder-readme { margin: 0; }
+.map-fallback .folder-readme .md { padding-left: 0; padding-right: 0; }
+
+/* A file by its lines: the number, then the line, which wraps under itself.
+   Clicking a number chooses the line; the lines chosen are tinted. */
+.code { padding: 12px 0 40vh; line-height: 1.6; tab-size: 4; --gutter: calc(var(--digits) * 1ch + 30px); }
+.code-chunk.lazy { content-visibility: auto; }
+.ln { position: relative; padding: 0 20px 0 var(--gutter); min-height: 1.6em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ln::before { content: attr(data-n); position: absolute; left: 0; width: calc(var(--gutter) - 16px); text-align: right; color: var(--dim); cursor: pointer; user-select: none; }
+.ln:hover::before { color: var(--muted); }
+.ln.chosen { background: var(--sel); }
+.ln.chosen::before { color: var(--text); }
+/* Where I went: a line or paragraph, marked for a moment. */
+.flash { animation: flash 1.4s ease-out; }
+@keyframes flash { 0%, 30% { box-shadow: inset 2px 0 0 var(--pos); background-color: color-mix(in srgb, var(--pos) 14%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; } }
+::highlight(find) { background-color: #3d3d3d; color: var(--strong); }
+::highlight(find-now) { background-color: color-mix(in srgb, var(--pos) 45%, transparent); color: var(--strong); }
+::highlight(target) { background-color: color-mix(in srgb, var(--pos) 30%, transparent); color: var(--strong); }
+#file-body { position: relative; }
+.find-spot { position: absolute; pointer-events: none; outline: 2px solid var(--pos); border-radius: 2px; }
+
+/* Find in what is shown (⌘F). */
+#find { flex: none; display: flex; align-items: center; gap: 4px; padding: 5px 12px 5px 20px; border-bottom: 1px solid var(--line); background: var(--side); }
+#find[hidden] { display: none; }
+#find-input { flex: 0 1 320px; min-width: 120px; font: 13px var(--sans); color: var(--strong); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; outline: none; }
+#find-input:focus { border-color: var(--pos); }
+#find.none #find-input { border-color: color-mix(in srgb, var(--error) 60%, transparent); }
+#find-count { min-width: 9ch; padding: 0 6px; }
+#find button { padding: 1px 8px; }
+#find-case[aria-pressed="true"] { color: var(--strong); border-color: var(--line-strong); }
+#find-close { margin-left: auto; }
+
+/* Beside a file's name: the lines chosen, its box on the map, and ways to
+   find it in the tree and name it. */
+.head-tools { margin-left: auto; display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 100 auto; overflow: hidden; }
+#file-head > .crumbs { flex: 0 1 auto; min-width: 8ch; }
+.head-tools ~ .switch, .head-tools ~ .edit-actions { margin-left: 8px; }
+.head-tools button { padding: 2px 8px; font-size: 12px; }
+.line-words:not(:empty) { margin-right: 6px; }
+.on-map { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.on-map::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 2px; background: var(--g); }
+.on-map-box { overflow: hidden; text-overflow: ellipsis; }
+/* Where the head is short of room, the trail keeps it: the tools give way
+   first, the ones the Go menu also has before the rest, and sooner while an
+   edit's buttons are there too. */
+@container (max-width: 1180px) { #file-head:has(.edit-actions) .tool-tree, #file-head:has(.edit-actions) .file-size { display: none; } }
+@container (max-width: 1000px) { #file-head:has(.edit-actions) .tool-copy, .tool-tree { display: none; } }
+@container (max-width: 820px) { .tool-copy, .file-size, #file-head:has(.edit-actions) .on-map { display: none; } }
+@container (max-width: 640px) { .on-map, .line-words { display: none; } }
+
+/* Find in Folder (⇧⌘F), in the palette: each file, then its lines. */
+.palette-box.wide { width: min(860px, calc(100vw - 48px)); max-height: 72vh; }
+.palette-row.palette-head { cursor: default; padding-top: 10px; color: var(--muted); }
+.palette-row.palette-head .palette-label { color: var(--text); max-width: none; }
+.palette-row.palette-text { padding-top: 3px; padding-bottom: 3px; }
+.palette-row.palette-text::before { display: none; }
+.palette-row.palette-text .palette-label { flex: 1 1 auto; max-width: none; color: var(--text); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+.palette-lead { flex: none; width: 6ch; text-align: right; color: var(--dim); font-size: 12px; }
+.palette-row.palette-text.on .palette-lead { color: var(--muted); }
+#palette-list.busy { opacity: 0.5; }
+.palette-foot-line { display: flex; align-items: baseline; gap: 10px; }
+.palette-case { flex: none; padding: 0 6px; font-size: 12px; }
+.palette-case.on { color: var(--strong); border-color: var(--line-strong); }
+
+/* ⌘-click to open, over a file reference in the terminal. */
+#term-tip { position: absolute; z-index: 3; padding: 3px 8px; background: #1f1f1f; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--text); pointer-events: none; white-space: nowrap; }
+#term-tip[hidden] { display: none; }
+
+/* The preview: the line over the page, and the page's box, which main fills
+   with the page itself. What it says when nothing is shown sits in the box. */
+#file-head.preview-head { gap: 4px; padding-top: 6px; padding-bottom: 6px; }
+#file-head.preview-head > button.quiet { flex: none; padding: 2px 8px; font-size: 15px; }
+#preview-address { flex: 1; min-width: 90px; padding: 4px 8px; font-size: 12px; color: var(--strong); background: var(--side); border: 1px solid var(--border); border-radius: 5px; }
+#preview-address:focus { outline: none; border-color: var(--pos); }
+.preview-status { flex: none; font-size: 11px; min-width: 0; }
+.preview-status.error { color: var(--error); }
+#preview-external { flex: none; font-size: 13px; margin-left: 4px; }
+#file-body.preview-body { display: flex; flex-direction: column; overflow: hidden; }
+#preview-slot { flex: 1; min-height: 0; background: var(--bg); }
+.preview-empty { padding: 28px 32px; max-width: 640px; }
+.preview-empty p { margin: 0 0 10px; }
+.preview-said { color: var(--strong); word-break: break-all; }
+.preview-buttons { display: flex; gap: 8px; margin-top: 16px; }
+.preview-bar { flex: none; display: flex; align-items: center; gap: 10px; padding: 7px 12px 7px 16px; border-bottom: 1px solid var(--line-strong); background: var(--side); color: var(--text); }
+.preview-bar > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.preview-bar.error > span { color: var(--error); }
+.preview-bar button { flex: none; }
+
+/* Narrow panes: the middle's and the terminal's lines keep what matters.
+   The preview's Open in browser becomes an arrow, and the terminal's folder,
+   which its tab's tooltip also names, steps aside. */
+#file, #terminal { container-type: inline-size; }
+.short-label { display: none; }
+@container (max-width: 560px) {
+  #preview-external .long-label { display: none; }
+  #preview-external .short-label { display: inline; }
+  .preview-status { max-width: 9ch; overflow: hidden; text-overflow: ellipsis; }
+}
+@container (max-width: 380px) {
+  #term-where { display: none; }
+  #term-bar { gap: 6px; }
+  .term-name { max-width: 10ch; }
+  #term-toggle .long-label { display: none; }
+  #term-toggle .short-label { display: inline; }
+}

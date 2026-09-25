@@ -25,8 +25,8 @@ function mapStatus(checked) {
     state: checked.dropped.length ? 'dropped' : 'ok',
     checked: boxes + arrows,
     total: boxes + arrows + checked.dropped.length,
-    detail: 'Boxes ' + boxes + ' of ' + (boxes + droppedBoxes) + ' and arrows ' + arrows + ' of '
-      + (arrows + droppedArrows) + ' in map.json check out against the disk.',
+    detail: 'Kept in map.json: ' + boxes + ' of ' + (boxes + droppedBoxes) + ' boxes and ' + arrows + ' of '
+      + (arrows + droppedArrows) + ' arrows. For those shown, the named files and folders were found in the open folder, and each quote was found in its file. Labels are not checked; important parts may be missing.',
   };
 }
 

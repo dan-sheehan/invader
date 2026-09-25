@@ -1,16 +1,20 @@
 {
   "name": "invader",
+  "productName": "next-invader",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "description": "A workspace for building software with AI coding tools.",
-  "main": "main.js",
+  "main": "main/main.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "postinstall": "node node_modules/electron/install.js && chmod +x node_modules/node-pty/prebuilds/*/spawn-helper && /usr/libexec/PlistBuddy -c 'Set :CFBundleName invader' -c 'Set :CFBundleDisplayName invader' node_modules/electron/dist/Electron.app/Contents/Info.plist"
+    "bench": "node bench/bench.js",
+    "app": "node pack.js",
+    "postinstall": "node node_modules/electron/install.js && chmod +x node_modules/node-pty/prebuilds/*/spawn-helper && /usr/libexec/PlistBuddy -c 'Set :CFBundleName next-invader' -c 'Set :CFBundleDisplayName next-invader' node_modules/electron/dist/Electron.app/Contents/Info.plist"
   },
   "devDependencies": {
+    "@electron/packager": "20.3.0",
     "electron": "44.4.4"
   },
   "dependencies": {
